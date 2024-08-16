@@ -17,6 +17,8 @@
 package cmd
 
 import (
+	"path"
+
 	"github.com/juicedata/juicefs/pkg/meta"
 	"github.com/juicedata/juicefs/pkg/object"
 	"github.com/juicedata/juicefs/pkg/vfs"
@@ -42,6 +44,11 @@ func mountFlags() []cli.Flag {
 		&cli.Float64Flag{
 			Name:  "delay-close",
 			Usage: "delay file closing in seconds.",
+		},
+		&cli.StringFlag{
+			Name:  "log",
+			Value: path.Join(getDefaultLogDir(), "juicefs.log"),
+			Usage: "path of log file when running in background",
 		},
 	}
 }

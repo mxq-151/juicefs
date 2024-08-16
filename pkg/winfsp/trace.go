@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+
+	"github.com/juicedata/juicefs/pkg/utils"
 )
 
 var (
@@ -109,6 +111,7 @@ func Trace(skip int, prfx string, vals ...interface{}) func(vals ...interface{})
 			}
 			rslt = traceJoin(true, vals)
 		}
+		utils.GetLogger("juicefs").Infof(form, prfx, name, args, rslt)
 		log.Printf(form, prfx, name, args, rslt)
 		if nil != rcvr {
 			panic(rcvr)
