@@ -43,7 +43,10 @@ type Ino = meta.Ino
 
 func trace(vals ...interface{}) func(vals ...interface{}) {
 	uid, gid, pid := fuse.Getcontext()
-	return Trace(1, fmt.Sprintf("[uid=%v,gid=%v,pid=%d]", uid, gid, pid), vals...)
+	return func(vals ...interface{}) {
+		logger.Infof("[uid=%v,gid=%v,pid=%d] %v", uid, gid, pid, vals)
+	}
+	// return Trace(1, fmt.Sprintf("[uid=%v,gid=%v,pid=%d]", uid, gid, pid), vals...)
 }
 
 type juice struct {
