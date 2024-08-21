@@ -527,7 +527,12 @@ func GenFuseOpt(conf *vfs.Config, options string, mt int, noxattr, noacl bool) f
 	opt.DisableXAttrs = noxattr
 	opt.EnableAcl = !noacl
 	opt.IgnoreSecurityLabels = noacl
-	opt.MaxWrite = 1 << 20
+	getenv := os.Getenv("MAX_WRITE")
+	if getenv != "" {
+		opt.MaxWrite = 128 << 10
+	} else {
+		opt.MaxWrite = 1 << 20
+	}
 	opt.MaxReadAhead = 1 << 20
 	opt.DirectMount = true
 	opt.DontUmask = true
