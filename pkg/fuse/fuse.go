@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -528,11 +529,12 @@ func GenFuseOpt(conf *vfs.Config, options string, mt int, noxattr, noacl bool) f
 	opt.EnableAcl = !noacl
 	opt.IgnoreSecurityLabels = noacl
 	getenv := os.Getenv("MAX_WRITE")
-	if getenv != "" {
-		opt.MaxWrite = 128 << 10
-	} else {
-		opt.MaxWrite = 1 << 20
+	atoi, err := strconv.Atoi(getenv)
+	if err != nil {
+		panic(err)
 	}
+	logger.Infof("MAX_WRITE: %d", atoi)
+	opt.MaxWrite = atoi << 10
 	opt.MaxReadAhead = 1 << 20
 	opt.DirectMount = true
 	opt.DontUmask = true
