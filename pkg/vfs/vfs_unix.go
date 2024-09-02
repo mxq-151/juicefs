@@ -393,3 +393,15 @@ func (v *VFS) Ioctl(ctx Context, ino Ino, cmd uint32, arg uint64, bufIn, bufOut 
 		return
 	}
 }
+
+func hasReadPerm(flag uint32) bool {
+	return (flag & O_ACCMODE) != syscall.O_WRONLY
+}
+
+func (v *VFS) checkReadPerm(flags uint32) syscall.Errno {
+	// there could be read operation for write-only if kernel writeback is enabled
+	if !v.Conf.FuseOpts.EnableWriteback && !hasReadPerm(flags) {
+		return syscall.EBADF
+	}
+	return 0
+}

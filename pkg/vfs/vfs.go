@@ -653,10 +653,6 @@ func (v *VFS) Release(ctx Context, ino Ino, fh uint64) {
 	}
 }
 
-func hasReadPerm(flag uint32) bool {
-	return (flag & O_ACCMODE) != syscall.O_WRONLY
-}
-
 func (v *VFS) Read(ctx Context, ino Ino, buf []byte, off uint64, fh uint64) (n int, err syscall.Errno) {
 	size := uint32(len(buf))
 	if IsSpecialNode(ino) {
@@ -742,11 +738,10 @@ func (v *VFS) Read(ctx Context, ino Ino, buf []byte, off uint64, fh uint64) (n i
 		return
 	}
 
-	// there could be read operation for write-only if kernel writeback is enabled
-	if v.Conf.FuseOpts != nil && !v.Conf.FuseOpts.EnableWriteback && !hasReadPerm(h.flags) {
-		err = syscall.EBADF
+	if err = v.checkReadPerm(h.flags); err != 0 {
 		return
 	}
+
 	if !h.Rlock(ctx) {
 		err = syscall.EINTR
 		return

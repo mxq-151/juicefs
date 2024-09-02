@@ -16,5 +16,11 @@
 
 package vfs
 
+import "syscall"
+
 const O_ACCMODE = 0xff
 const F_UNLCK = 0x01
+
+func (v *VFS) checkReadPerm(flags uint32) syscall.Errno {
+	return 0
+}
