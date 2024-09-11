@@ -232,7 +232,7 @@ func newGS(endpoint, accessKey, secretKey, token string) (ObjectStorage, error) 
 		}
 		clis[i] = client
 	}
-
+	logger.Infof("google client number: %d", size)
 	return &gs{clients: clis, bucket: bucket, region: region}, nil
 }
 
