@@ -780,6 +780,16 @@ func launchMount(mp string, conf *vfs.Config) error {
 		os.Unsetenv("_FUSE_STATE_PATH")
 		mountPid = cmd.Process.Pid
 
+		signalChan := make(chan os.Signal, 10)
+		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+		go func() {
+			for {
+				sig := <-signalChan
+				logger.Infof("Received signal %s, propagating to child process %d...", sig.String(), mountPid)
+				cmd.Process.Signal(sig)
+			}
+		}()
+
 		ctx, cancel := context.WithCancel(context.TODO())
 		go watchdog(ctx, mp)
 		err = cmd.Wait()
