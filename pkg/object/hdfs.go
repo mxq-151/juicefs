@@ -278,7 +278,9 @@ func newHDFS(addr, username, sk, token string) (ObjectStorage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Problem loading configuration: %s", err)
 	}
-
+	for k, v := range conf {
+		logger.Infof("Hadoop conf %s: %s", k, v)
+	}
 	rpcAddr, basePath := parseHDFSAddr(addr, conf)
 	options := hdfs.ClientOptionsFromConf(conf)
 	if addr != "" {
@@ -318,10 +320,14 @@ func newHDFS(addr, username, sk, token string) (ObjectStorage, error) {
 
 	var replication = 3
 	if v, found := conf["dfs.replication"]; found {
+		logger.Infof("dfs.replication %s", v)
 		if x, err := strconv.Atoi(v); err == nil {
 			replication = x
 		}
+	} else {
+		logger.Infof("dfs.replication not found")
 	}
+
 	var umask uint16 = 022
 	if v, found := conf["fs.permissions.umask-mode"]; found {
 		if x, err := strconv.ParseUint(v, 8, 16); err == nil {
