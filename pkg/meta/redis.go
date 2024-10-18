@@ -3160,6 +3160,10 @@ func (m *redisMeta) hscan(ctx context.Context, key string, f func([]string) erro
 	return nil
 }
 
+func (m *redisMeta) ListSlicesByIno(ctx Context, inode Ino, slice *[]Slice, delete bool, showProgress func()) syscall.Errno {
+	return 0
+}
+
 func (m *redisMeta) ListSlices(ctx Context, slices map[Ino][]Slice, delete bool, showProgress func()) syscall.Errno {
 	m.cleanupLeakedInodes(delete)
 	m.cleanupLeakedChunks(delete)

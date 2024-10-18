@@ -61,6 +61,7 @@ func Main(args []string) error {
 			cmdDestroy(),
 			cmdGC(),
 			cmdFsck(),
+			cmdPFsck(),
 			cmdRestore(),
 			cmdDump(),
 			cmdLoad(),

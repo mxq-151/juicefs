@@ -2514,6 +2514,10 @@ func (m *kvMeta) scanAllChunks(ctx Context, ch chan<- cchunk, bar *utils.Bar) er
 	})
 }
 
+func (m *kvMeta) ListSlicesByIno(ctx Context, inode Ino, slice *[]Slice, delete bool, showProgress func()) syscall.Errno {
+	return 0
+}
+
 func (m *kvMeta) ListSlices(ctx Context, slices map[Ino][]Slice, delete bool, showProgress func()) syscall.Errno {
 	if delete {
 		m.doCleanupSlices()

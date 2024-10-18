@@ -432,6 +432,8 @@ type Meta interface {
 	CompactAll(ctx Context, threads int, bar *utils.Bar) syscall.Errno
 	// ListSlices returns all slices used by all files.
 	ListSlices(ctx Context, slices map[Ino][]Slice, delete bool, showProgress func()) syscall.Errno
+
+	ListSlicesByIno(ctx Context, inode Ino, slice *[]Slice, delete bool, showProgress func()) syscall.Errno
 	// Remove all files and directories recursively.
 	Remove(ctx Context, parent Ino, name string, count *uint64) syscall.Errno
 	// Get summary of a node; for a directory it will accumulate all its child nodes
