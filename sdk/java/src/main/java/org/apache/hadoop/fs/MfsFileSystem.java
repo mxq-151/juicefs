@@ -1,10 +1,5 @@
 package org.apache.hadoop.fs;
 
-public class MfsFileSystem {
-
-}
-package org.apache.hadoop.fs;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclStatus;
