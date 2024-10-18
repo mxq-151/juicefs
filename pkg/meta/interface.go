@@ -419,6 +419,8 @@ type Meta interface {
 
 	// ListSlices returns all slices used by all files.
 	ListSlices(ctx Context, slices map[Ino][]Slice, delete bool, showProgress func()) syscall.Errno
+
+	ListSlicesByIno(ctx Context, inode Ino, slice *[]Slice, delete bool, showProgress func()) syscall.Errno
 	// Remove all files and directories recursively.
 	// count represents the number of attempted deletions of entries (even if failed).
 	Remove(ctx Context, parent Ino, name string, count *uint64) syscall.Errno

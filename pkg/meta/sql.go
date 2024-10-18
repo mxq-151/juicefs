@@ -2899,6 +2899,46 @@ func (m *dbMeta) ListSlices(ctx Context, slices map[Ino][]Slice, delete bool, sh
 	}))
 }
 
+func (m *dbMeta) ListSlicesByIno(ctx Context, inode Ino, slice *[]Slice, delete bool, showProgress func()) syscall.Errno {
+	if delete {
+		m.doCleanupSlices()
+	}
+	err := m.roTxn(func(s *xorm.Session) error {
+		var cs []chunk
+		err := s.Where("inode=?", inode).Find(&cs)
+		if err != nil {
+			return err
+		}
+
+		for _, c := range cs {
+			ss := readSliceBuf(c.Slices)
+			if ss == nil {
+				logger.Errorf("Corrupt value for inode %d chunk index %d", c.Inode, c.Indx)
+				continue
+			}
+
+			for _, s := range ss {
+				if s.id > 0 {
+					*slice = append(*slice, Slice{Id: s.id, Size: s.size})
+					if showProgress != nil {
+						showProgress()
+					}
+				}
+
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return errno(err)
+	}
+	if m.getFormat().TrashDays == 0 {
+		return 0
+	}
+
+	return 0
+}
+
 func (m *dbMeta) scanTrashSlices(ctx Context, scan trashSliceScan) error {
 	if scan == nil {
 		return nil

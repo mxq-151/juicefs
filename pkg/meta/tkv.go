@@ -2439,6 +2439,10 @@ func (m *kvMeta) ListSlices(ctx Context, slices map[Ino][]Slice, delete bool, sh
 	}))
 }
 
+func (m *kvMeta) ListSlicesByIno(ctx Context, inode Ino, slice *[]Slice, delete bool, showProgress func()) syscall.Errno {
+	return 0
+}
+
 func (m *kvMeta) scanTrashSlices(ctx Context, scan trashSliceScan) error {
 	if scan == nil {
 		return nil
