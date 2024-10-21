@@ -39,6 +39,7 @@ import (
 
 var superuser = "hdfs"
 var supergroup = "supergroup"
+var Min = 30.0
 
 type hdfsclient struct {
 	DefaultObjectStorage
@@ -235,6 +236,7 @@ func (h *hdfsclient) List(prefix, marker, delimiter string, limit int64, followL
 	}
 	sort.Strings(names)
 
+	cur := time.Now()
 	for _, name := range names {
 		p := dir + name
 		if !strings.HasPrefix(p, h.basePath) {
@@ -245,6 +247,13 @@ func (h *hdfsclient) List(prefix, marker, delimiter string, limit int64, followL
 			continue
 		}
 		f := h.toFile(key, entryMap[name])
+
+		interval := cur.Sub(f.obj.mtime)
+		//最近新修改时间小于指定时间分钟的文件则不同步
+		if !f.obj.isDir && interval.Minutes() <= Min {
+			continue
+		}
+
 		objs = append(objs, f)
 		if len(objs) >= int(limit) {
 			break
@@ -312,6 +321,17 @@ func newHDFS(addr, username, sk, token string) (ObjectStorage, error) {
 	}
 	if os.Getenv("HADOOP_SUPER_GROUP") != "" {
 		supergroup = os.Getenv("HADOOP_SUPER_GROUP")
+	}
+
+	interval := "30"
+	if os.Getenv("INTERVAL") != "" {
+		interval = os.Getenv("INTERVAL")
+	}
+
+	logger.Infof(".......interval s%", interval)
+
+	if x, err := strconv.Atoi(interval); err == nil {
+		Min = float64(x)
 	}
 
 	var replication = 3
