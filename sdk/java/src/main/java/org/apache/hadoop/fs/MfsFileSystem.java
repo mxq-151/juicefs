@@ -126,13 +126,7 @@ public class MfsFileSystem extends FilterFileSystem {
 
     public Path resolvePath(Path p) throws IOException {
         this.checkPath(p);
-        try {
-            return this.getFileStatus(p).getPath();
-        }catch (IOException e)
-        {
-            LOG.error(e);
-            throw e;
-        }
+        return this.getFileStatus(p).getPath();
     }
 
 
@@ -142,30 +136,25 @@ public class MfsFileSystem extends FilterFileSystem {
     public void initialize(URI name, Configuration conf) throws IOException {
 
         try {
-
             Configuration tmp=new Configuration(conf);
             tmp.set("fs.hdfs.impl.disable.cache","true");
             tmp.set("fs.jfs.impl.disable.cache","true");
-            LOG.info("init new mfs filesystem");
-            this.jfsScheme = "jfs";
-            this.jfsAuthority = conf.get("juicefs.name");
-
-            URI realUri=new URI(conf.get("fs.defaultFS","file:///"));
+            //确保生命周期相同
+            this.fs = FileSystem.get(new URI(conf.get("fs.defaultFS","file:///")), tmp);
+            assert this.fs != null;
+            this.statistics = fs.statistics;
+            URI realUri = fs.getUri();
             this.hdfsScheme = realUri.getScheme();
             this.hdfsAuthority = realUri.getAuthority();
             this.hdfsUri = realUri;
 
-
-            this.fs = FileSystem.get(realUri, tmp);
-            assert this.fs != null;
-            this.statistics = fs.statistics;
-
-
-            this.jfs = FileSystem.get(new URI("jfs://"+jfsAuthority),tmp);
-
             this.myScheme = "mfs";
             this.myAuthority = "sz-cluster";
             this.myUri = new URI("mfs://sz-cluster/");
+
+            this.jfs = FileSystem.get(new URI("jfs://"+fs.getConf().get("juicefs.name")),tmp);
+            this.jfsScheme = "jfs";
+            this.jfsAuthority = fs.getConf().get("juicefs.name");
             super.initialize(realUri, conf);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -309,11 +298,6 @@ public class MfsFileSystem extends FilterFileSystem {
             return true;
         }
 
-        if(this.jfsExists(this.swizzleJfsPath(f)))
-        {
-            jfs.delete(this.swizzleJfsPath(f));
-        }
-
         return  super.delete(this.swizzleHdfsPath(f), recursive);
 
     }
@@ -331,89 +315,84 @@ public class MfsFileSystem extends FilterFileSystem {
 
     public FileStatus[] listStatus(Path f) throws IOException {
 
-        try {
-            FileStatus[] orig = new FileStatus[0];
-            if (hdfsExists(this.swizzleHdfsPath(f))) {
-                orig = fs.listStatus(this.swizzleHdfsPath(f));
+        FileStatus[] orig = new FileStatus[0];
+        if (hdfsExists(this.swizzleHdfsPath(f))) {
+            orig = fs.listStatus(this.swizzleHdfsPath(f));
+        }
+        if(orig.length<=0)
+        {
+            if (jfsExists(this.swizzleJfsPath(f))) {
+                orig = jfs.listStatus(this.swizzleJfsPath(f));
             }
-            if(orig.length<=0)
-            {
-                if (jfsExists(this.swizzleJfsPath(f))) {
-                    orig = jfs.listStatus(this.swizzleJfsPath(f));
-                }
-            }else {
-                FileStatus[] jorig = new FileStatus[0];
-                Set<String> set=new HashSet<>();
-                for (int j = 0; j < orig.length; ++j) {
-                    set.add(orig[j].getPath().getName());
-                }
-
-                if (jfsExists(this.swizzleJfsPath(f))) {
-                    jorig = jfs.listStatus(this.swizzleJfsPath(f));
-                }
-
-                List<FileStatus> list=new ArrayList<>();
-                for (int i = 0; i < jorig.length; ++i) {
-                    if(jorig[i].isDirectory())
-                    {
-                        if(!set.contains(jorig[i].getPath().getName()))
-                        {
-                            list.add(jorig[i]);
-                        }
-                    }
-                }
-
-                FileStatus[] ret = new FileStatus[orig.length+list.size()];
-
-                int index=0;
-                for (int i = 0; i < orig.length; ++i) {
-                    ret[i] = this.swizzleFileStatus(orig[i], false,false);
-                    index++;
-                }
-
-                for (int i = 0; i < list.size(); ++i) {
-                    ret[index] = this.swizzleFileStatus(list.get(i), false,false);
-                    index++;
-                }
-
-                return ret;
-
+        }else {
+            FileStatus[] jorig = new FileStatus[0];
+            Set<String> set=new HashSet<>();
+            for (int j = 0; j < orig.length; ++j) {
+                set.add(orig[j].getPath().getName());
             }
 
+            if (jfsExists(this.swizzleJfsPath(f))) {
+                jorig = jfs.listStatus(this.swizzleJfsPath(f));
+            }
 
-            FileStatus[] ret = new FileStatus[orig.length];
+            List<FileStatus> list=new ArrayList<>();
+            for (int i = 0; i < jorig.length; ++i) {
+               if(jorig[i].isDirectory())
+               {
+                   if(!set.contains(jorig[i].getPath().getName()))
+                   {
+                       list.add(jorig[i]);
+                   }
+               }
+            }
 
+            FileStatus[] ret = new FileStatus[orig.length+list.size()];
+
+            int index=0;
             for (int i = 0; i < orig.length; ++i) {
                 ret[i] = this.swizzleFileStatus(orig[i], false,false);
+                index++;
+            }
+
+            for (int i = 0; i < list.size(); ++i) {
+                ret[index] = this.swizzleFileStatus(list.get(i), false,false);
+                index++;
             }
 
             return ret;
-        }catch (IOException e)
-        {
-            LOG.error(e);
-            throw e;
+
         }
 
 
+        FileStatus[] ret = new FileStatus[orig.length];
+
+        for (int i = 0; i < orig.length; ++i) {
+            ret[i] = this.swizzleFileStatus(orig[i], false,false);
+        }
+
+        return ret;
+
     }
 
-    private boolean hdfsExists(Path p) throws IOException {
+    private boolean hdfsExists(Path p)
+    {
         try {
             return fs.getFileStatus(p) != null;
         } catch (FileNotFoundException e) {
             return false;
         } catch (IOException e) {
-            throw e;
+            throw new RuntimeException(e);
         }
     }
 
-    private boolean jfsExists(Path p) throws IOException {
+    private boolean jfsExists(Path p)
+    {
         try {
             return jfs.getFileStatus(p) != null;
         } catch (FileNotFoundException e) {
             return false;
         } catch (IOException e) {
-            throw e;
+            throw new RuntimeException(e);
         }
     }
 
@@ -485,7 +464,8 @@ public class MfsFileSystem extends FilterFileSystem {
 
     @Override
     public void close() throws IOException {
-        this.jfs.close();
+        super.close();
+        jfs.close();
     }
 
     @Override

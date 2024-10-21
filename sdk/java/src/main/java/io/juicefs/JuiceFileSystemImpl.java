@@ -326,6 +326,7 @@ public class JuiceFileSystemImpl extends FileSystem {
     setConf(conf);
 
     this.uri = uri;
+    LOG.info("uri:"+uri);
     name = conf.get("juicefs.name", uri.getHost());
     if (null == name) {
       throw new IOException("name is required");
