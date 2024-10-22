@@ -273,44 +273,146 @@ public class MfsFileSystem extends FilterFileSystem {
 
     public boolean rename(Path src, Path dst) throws IOException {
 
-        if(!this.hdfsExists(this.swizzleHdfsPath(src)))
+        Path path=this.swizzleHdfsPath(dst);
+        boolean jfsExists=this.jfsExists(this.swizzleJfsPath(src));
+        boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(src));
+        if(jfsExists && hdfsExists)
         {
-            return true;
+            boolean jfsSuc=false;
+            boolean hdfsSuc=false;
+            jfsSuc=jfs.rename(swizzleJfsPath(src), swizzleJfsPath(dst));
+            if(jfsSuc)
+            {
+                fs.mkdirs(path.getParent());
+                hdfsSuc=fs.rename(this.swizzleHdfsPath(src), path);
+                if(!hdfsSuc)
+                {
+                    throw new IOException("suc to rename on jfs but fail rename on hdfs:"+src.toString());
+                }
+
+                return hdfsSuc;
+            }else{
+                throw new IOException("suc to rename on jfs:"+src.toString());
+            }       
+        }else if(!jfsExists && hdfsExists)
+        {
+            return fs.rename(this.swizzleHdfsPath(src), path);
+        }else if(jfsExists && !hdfsExists)
+        {
+            return jfs.rename(swizzleJfsPath(src), swizzleJfsPath(dst));
         }
 
-        Path path=this.swizzleHdfsPath(dst);
-        fs.mkdirs(path.getParent());
-        return super.rename(this.swizzleHdfsPath(src), path);
-
+        return false;
     }
 
     @Override
     protected void rename(Path src, Path dst, Options.Rename... options)
             throws IOException {
-        Path path=this.swizzleHdfsPath(dst);
-        fs.mkdirs(path.getParent());
-        fs.rename(this.swizzleHdfsPath(src), path, options);
+        
+                Path path=this.swizzleHdfsPath(dst);
+
+                boolean jfsExists=this.jfsExists(this.swizzleJfsPath(src));
+                boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(src));
+                if(jfsExists && hdfsExists)
+                {
+                    boolean jfsSuc=false;
+                    try {
+                        jfs.rename(swizzleJfsPath(src), swizzleJfsPath(dst),options);
+                        jfsSuc=true;
+                    } catch (Exception e) {
+                        // TODO: handle exception
+                        LOG.error("fail to rename jfs:", e);
+                        throw new IOException("fail to rename on jfs:"+src.toString());
+                    }
+                    
+                    if(jfsSuc)
+                    {
+                        try{
+                            fs.mkdirs(path.getParent());
+                            fs.rename(this.swizzleHdfsPath(src), path,options);
+                            return ;
+                        }catch(Exception e)
+                        {
+                            LOG.error("fail to rename hdfs:", e);
+                            throw new IOException("suc to rename on jfs but fail rename on hdfs:"+src.toString());
+                        }
+                    }      
+                }else if(!jfsExists && hdfsExists)
+                {
+                    fs.mkdirs(path.getParent());
+                     fs.rename(this.swizzleHdfsPath(src), path);
+                }else if(jfsExists && !hdfsExists)
+                {
+                     jfs.rename(swizzleJfsPath(src), swizzleJfsPath(dst));
+                }
+        
+                return ;
     }
 
     public boolean delete(Path f, boolean recursive) throws IOException {
-        if(!this.hdfsExists(this.swizzleHdfsPath(f)))
+
+        boolean jfsExists=this.jfsExists(this.swizzleJfsPath(f));
+        boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(f));
+        if(jfsExists && hdfsExists)
         {
-            return true;
+            boolean jfsSuc=false;
+            boolean hdfsSuc=false;
+            jfsSuc=this.jfs.delete(this.swizzleJfsPath(f), recursive);
+            if(jfsSuc)
+            {
+                hdfsSuc= super.delete(this.swizzleHdfsPath(f), recursive);
+                if(!hdfsSuc)
+                {
+                    throw new IOException("suc to delete on jfs but fail delete on hdfs:"+f.toString())
+                }
+
+                return hdfsSuc;
+            }else{
+                throw new IOException("fail delete on jfs:"+f.toString());
+            }
+        }else if(!jfsExists && hdfsExists)
+        {
+            return  super.delete(this.swizzleHdfsPath(f), recursive);   
+        }else if(jfsExists && !hdfsExists)
+        {
+            this.jfs.delete(this.swizzleJfsPath(f), recursive);
         }
 
-        return  super.delete(this.swizzleHdfsPath(f), recursive);
+        return false;
 
     }
 
     public boolean deleteOnExit(Path f) throws IOException {
 
+        boolean jfsExists=this.jfsExists(this.swizzleJfsPath(f));
+        boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(f));
 
-        if(!this.hdfsExists(this.swizzleHdfsPath(f)))
+        if(jfsExists && hdfsExists)
         {
-            return true;
+            boolean jfsSuc=false;
+            boolean hdfsSuc=false;
+            jfsSuc=this.jfs.deleteOnExit(this.swizzleJfsPath(f));
+            if(jfsSuc)
+            {
+                hdfsSuc= super.deleteOnExit(this.swizzleHdfsPath(f));
+                if(!hdfsSuc)
+                {
+                    throw new IOException("suc to delete on jfs but fail delete on hdfs:"+f.toString())
+                }
+                return hdfsSuc;
+            }else{
+                throw new IOException("fail delete on jfs:"+f.toString());
+            }
+        }else if(!jfsExists && hdfsExists)
+        {
+            return  super.deleteOnExit(this.swizzleHdfsPath(f));   
+        }else if(jfsExists && !hdfsExists)
+        {
+            this.jfs.deleteOnExit(this.swizzleJfsPath(f));
         }
 
-        return super.deleteOnExit(this.swizzleHdfsPath(f));
+        return false;
+        
     }
 
     public FileStatus[] listStatus(Path f) throws IOException {
