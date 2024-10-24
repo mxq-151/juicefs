@@ -273,6 +273,7 @@ public class MfsFileSystem extends FilterFileSystem {
 
     public boolean rename(Path src, Path dst) throws IOException {
 
+        LOG.info("rename without options......");
         Path path=this.swizzleHdfsPath(dst);
         boolean jfsExists=this.jfsExists(this.swizzleJfsPath(src));
         boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(src));
@@ -309,6 +310,7 @@ public class MfsFileSystem extends FilterFileSystem {
     protected void rename(Path src, Path dst, Options.Rename... options)
             throws IOException {
         
+                LOG.info("rename with options......");
                 Path path=this.swizzleHdfsPath(dst);
 
                 boolean jfsExists=this.jfsExists(this.swizzleJfsPath(src));
@@ -351,6 +353,7 @@ public class MfsFileSystem extends FilterFileSystem {
 
     public boolean delete(Path f, boolean recursive) throws IOException {
 
+        LOG.info("delete with recursive......");
         boolean jfsExists=this.jfsExists(this.swizzleJfsPath(f));
         boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(f));
         if(jfsExists && hdfsExists)
@@ -384,6 +387,7 @@ public class MfsFileSystem extends FilterFileSystem {
 
     public boolean deleteOnExit(Path f) throws IOException {
 
+        LOG.info("deleteOnExit without recursive......");
         boolean jfsExists=this.jfsExists(this.swizzleJfsPath(f));
         boolean hdfsExists=this.hdfsExists(this.swizzleHdfsPath(f));
 
